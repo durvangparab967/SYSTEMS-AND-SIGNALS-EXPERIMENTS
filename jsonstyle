@@ -1,0 +1,105 @@
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
+public class Account
+{
+    [JsonPropertyName("domain")]
+    public string Domain { get; set; }
+
+    [JsonPropertyName("value")]
+    public string Value { get; set; }
+}
+
+public class IncomeSource
+{
+    [JsonPropertyName("incomeType")]
+    public string IncomeType { get; set; }
+
+    [JsonPropertyName("regime")]
+    public string Regime { get; set; }
+}
+
+public class Key
+{
+    [JsonPropertyName("account")]
+    public Account Account { get; set; }
+
+    [JsonPropertyName("incomeSource")]
+    public IncomeSource IncomeSource { get; set; }
+}
+
+public class Range
+{
+    [JsonPropertyName("from")]
+    public string From { get; set; }
+
+    [JsonPropertyName("to")]
+    public string To { get; set; }
+}
+
+public class PartyLadder
+{
+    [JsonPropertyName("capacity")]
+    public string Capacity { get; set; }
+}
+
+public class RateComponent
+{
+    [JsonPropertyName("withholdingType")]
+    public string WithholdingType { get; set; }
+
+    [JsonPropertyName("rate")]
+    public int Rate { get; set; }
+}
+
+public class Metadata
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
+
+    [JsonPropertyName("source")]
+    public string Source { get; set; }
+
+    [JsonPropertyName("createdAt")]
+    public string CreatedAt { get; set; }
+}
+
+public class Value
+{
+    [JsonPropertyName("partyLadder")]
+    public PartyLadder PartyLadder { get; set; }
+
+    [JsonPropertyName("rate")]
+    public int Rate { get; set; }
+
+    [JsonPropertyName("rateComponents")]
+    public List<RateComponent> RateComponents { get; set; }
+
+    [JsonPropertyName("metadata")]
+    public Metadata Metadata { get; set; }
+}
+
+public class TaxRateLadder
+{
+    [JsonPropertyName("range")]
+    public Range Range { get; set; }
+
+    [JsonPropertyName("value")]
+    public Value Value { get; set; }
+}
+
+public class TaxData
+{
+    [JsonPropertyName("key")]
+    public Key Key { get; set; }
+
+    [JsonPropertyName("version")]
+    public int Version { get; set; }
+
+    [JsonPropertyName("updatedAT")]
+    public string UpdatedAt { get; set; }
+
+    [JsonPropertyName("taxRateLadder")]
+    public List<TaxRateLadder> TaxRateLadder { get; set; }
+}
