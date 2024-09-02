@@ -1,0 +1,91 @@
+CREATE PROCEDURE UpsertTaxData
+    @Domain NVARCHAR(50),
+    @CAID NVARCHAR(50),
+    @IncomeType NVARCHAR(50),
+    @Regime NVARCHAR(50),
+    @Version INT,
+    @UpdatedAt DATE,
+    @RangeFrom DATE,
+    @RangeTo DATE,
+    @PartyLadderCapacity NVARCHAR(50),
+    @Rate INT,
+    @WithholdingType NVARCHAR(50),
+    @RateComponentRate INT,
+    @MetadataId NVARCHAR(50),
+    @MetadataSource NVARCHAR(50),
+    @MetadataCreatedAt DATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Calculate the hash value based on the relevant columns
+    DECLARE @HashValue VARCHAR(64);
+    SET @HashValue = CONVERT(VARCHAR(64), HASHBYTES('MD5', 
+        @Domain + @CAID + @IncomeType + @Regime +
+        CAST(@Version AS NVARCHAR) + 
+        CAST(@UpdatedAt AS NVARCHAR) +
+        CAST(@RangeFrom AS NVARCHAR) + CAST(@RangeTo AS NVARCHAR) +
+        @PartyLadderCapacity +
+        CAST(@Rate AS NVARCHAR) +
+        @WithholdingType +
+        CAST(@RateComponentRate AS NVARCHAR) +
+        @MetadataId +
+        @MetadataSource +
+        CAST(@MetadataCreatedAt AS NVARCHAR)
+    ), 2);
+
+    IF EXISTS (
+        SELECT 1 
+        FROM TaxData
+        WHERE Domain = @Domain 
+        AND CAID = @CAID 
+        AND IncomeType = @IncomeType 
+        AND Regime = @Regime
+    )
+    BEGIN
+        -- Update existing record if hash has changed
+        IF EXISTS (
+            SELECT 1
+            FROM TaxData
+            WHERE Domain = @Domain 
+            AND CAID = @CAID 
+            AND IncomeType = @IncomeType 
+            AND Regime = @Regime
+            AND Hash <> @HashValue
+        )
+        BEGIN
+            UPDATE TaxData
+            SET 
+                Version = @Version,
+                UpdatedAt = @UpdatedAt,
+                RangeFrom = @RangeFrom,
+                RangeTo = @RangeTo,
+                PartyLadderCapacity = @PartyLadderCapacity,
+                Rate = @Rate,
+                WithholdingType = @WithholdingType,
+                RateComponentRate = @RateComponentRate,
+                MetadataId = @MetadataId,
+                MetadataSource = @MetadataSource,
+                MetadataCreatedAt = @MetadataCreatedAt,
+                Hash = @HashValue
+            WHERE Domain = @Domain 
+            AND CAID = @CAID 
+            AND IncomeType = @IncomeType 
+            AND Regime = @Regime;
+        END
+    END
+    ELSE
+    BEGIN
+        -- Insert new record
+        INSERT INTO TaxData (
+            Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+            PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+            MetadataSource, MetadataCreatedAt, Hash
+        )
+        VALUES (
+            @Domain, @CAID, @IncomeType, @Regime, @Version, @UpdatedAt, @RangeFrom, @RangeTo, 
+            @PartyLadderCapacity, @Rate, @WithholdingType, @RateComponentRate, @MetadataId, 
+            @MetadataSource, @MetadataCreatedAt, @HashValue
+        );
+    END
+END;
