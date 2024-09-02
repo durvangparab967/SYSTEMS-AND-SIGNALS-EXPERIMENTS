@@ -1,0 +1,68 @@
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+public class Account
+{
+    public string Domain { get; set; }
+    public string Value { get; set; }
+}
+
+public class IncomeSource
+{
+    public string IncomeType { get; set; }
+    public string Regime { get; set; }
+}
+
+public class Key
+{
+    public Account Account { get; set; }
+    public IncomeSource IncomeSource { get; set; }
+}
+
+public class Range
+{
+    public string From { get; set; }
+    public string To { get; set; }
+}
+
+public class PartyLadder
+{
+    public string Capacity { get; set; }
+}
+
+public class RateComponent
+{
+    public string WithholdingType { get; set; }
+    public int Rate { get; set; }
+}
+
+public class Metadata
+{
+    public string Id { get; set; }
+    public string Source { get; set; }
+    public string CreatedAt { get; set; }
+}
+
+public class Value
+{
+    public PartyLadder PartyLadder { get; set; }
+    public int Rate { get; set; }
+    public List<RateComponent> RateComponents { get; set; }
+    public Metadata Metadata { get; set; }
+}
+
+public class TaxRateLadder
+{
+    public Range Range { get; set; }
+    public Value Value { get; set; }
+}
+
+public class TaxData
+{
+    public Key Key { get; set; }
+    public int Version { get; set; }
+    public string UpdatedAt { get; set; }
+    public List<TaxRateLadder> TaxRateLadder { get; set; }
+}
