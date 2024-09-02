@@ -1,0 +1,41 @@
+[
+    {
+        "key": {
+            "account": {
+                "domain": "CAID",
+                "value": "A123647478"
+            },
+            "incomeSource": {
+                "incomeType": "Other_equivalent",
+                "regime": "US"
+            }
+        },
+        "version": 1,
+        "updatedAT": "2024-05-08",
+        "taxRateLadder": [
+            {
+                "range": {
+                    "from": "2024-01-01",
+                    "to": "2024-01-02"
+                },
+                "value": {
+                    "partyLadder": {
+                        "capacity": "UNDOCUMENTED"
+                    },
+                    "rate": 15,
+                    "rateComponents": [
+                        {
+                            "withholdingType": "NRA",
+                            "rate": 15
+                        }
+                    ],
+                    "metadata": {
+                        "id": "00000-0000-000-00000-000001",
+                        "source": "MANUAL",
+                        "createdAt": "2024-01-02"
+                    }
+                }
+            }
+        ]
+    }
+]
