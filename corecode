@@ -1,0 +1,103 @@
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+
+class Program
+{
+    static void Main()
+    {
+        string json = @"[
+            {
+                ""key"": {
+                    ""account"": {
+                        ""domain"": ""CAID"",
+                        ""value"": ""A123647478""
+                    },
+                    ""incomeSource"": {
+                        ""incomeType"": ""Other_equivalent"",
+                        ""regime"": ""US""
+                    }
+                },
+                ""version"": 1,
+                ""updatedAT"": ""2024-05-08"",
+                ""taxRateLadder"": [
+                    {
+                        ""range"": {
+                            ""from"": ""2024-01-01"",
+                            ""to"": ""2024-01-02""
+                        },
+                        ""value"": {
+                            ""partyLadder"": {
+                                ""capacity"": ""UNDOCUMENTED""
+                            },
+                            ""rate"": 15,
+                            ""rateComponents"": [
+                                {
+                                    ""withholdingType"": ""NRA"",
+                                    ""rate"": 15
+                                }
+                            ],
+                            ""metadata"": {
+                                ""id"": ""00000-0000-000-00000-000001"",
+                                ""source"": ""MANUAL"",
+                                ""createdAt"": ""2024-01-02""
+                            }
+                        }
+                    },
+                    {
+                        ""range"": {
+                            ""from"": ""2024-01-01"",
+                            ""to"": ""2024-01-02""
+                        },
+                        ""value"": {
+                            ""partyLadder"": {
+                                ""capacity"": ""UNDOCUMENTED""
+                            },
+                            ""rate"": 15,
+                            ""rateComponents"": [
+                                {
+                                    ""withholdingType"": ""NRA"",
+                                    ""rate"": 15
+                                }
+                            ],
+                            ""metadata"": {
+                                ""id"": ""00000-0000-000-00000-000001"",
+                                ""source"": ""MANUAL"",
+                                ""createdAt"": ""2024-01-02""
+                            }
+                        }
+                    }
+                ]
+            }
+        ]";
+
+        List<TaxData> taxData = JsonSerializer.Deserialize<List<TaxData>>(json);
+        
+        // Example: Print some parsed data
+        foreach (var data in taxData)
+        {
+            Console.WriteLine($"Account Domain: {data.Key.Account.Domain}");
+            Console.WriteLine($"Income Type: {data.Key.IncomeSource.IncomeType}");
+            Console.WriteLine($"Version: {data.Version}");
+            Console.WriteLine($"Updated At: {data.UpdatedAt}");
+
+            foreach (var ladder in data.TaxRateLadder)
+            {
+                Console.WriteLine($"From: {ladder.Range.From} To: {ladder.Range.To}");
+                Console.WriteLine($"Rate: {ladder.Value.Rate}");
+                Console.WriteLine($"Capacity: {ladder.Value.PartyLadder.Capacity}");
+                
+                foreach (var component in ladder.Value.RateComponents)
+                {
+                    Console.WriteLine($"Withholding Type: {component.WithholdingType}, Rate: {component.Rate}");
+                }
+
+                Console.WriteLine($"Metadata Id: {ladder.Value.Metadata.Id}");
+                Console.WriteLine($"Source: {ladder.Value.Metadata.Source}");
+                Console.WriteLine($"Created At: {ladder.Value.Metadata.CreatedAt}");
+            }
+
+            Console.WriteLine();
+        }
+    }
+}
