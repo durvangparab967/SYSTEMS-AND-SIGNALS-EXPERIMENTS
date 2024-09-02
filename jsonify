@@ -1,0 +1,91 @@
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        string json = @"[
+            {
+                'key': {
+                    'account': {
+                        'domain': 'CAID',
+                        'value': 'A123647478'
+                    },
+                    'incomeSource':{
+                        'incomeType':'Other_equivalent',
+                        'regime':'US'
+                    }
+                },
+                'version': 1,
+                'updatedAT': '2024-05-08',
+                'taxRateLadder':[
+                    {
+                        'range':{
+                            'from': '2024-01-01',
+                            'to': '2024-01-02'
+                        },
+                        'value':{
+                            'partyLadder':{
+                                'capacity':'UNDOCUMENTED'
+                            },
+                            'rate':15,
+                            'rateComponents':[
+                                {
+                                    'withholdingType': 'NRA',
+                                    'rate': 15
+                                }
+                            ],
+                            'metadata':{
+                                'id': '00000-0000-000-00000-000001',
+                                'source': 'MANUAL',
+                                'createdAt': '2024-01-02'
+                            }
+                        }
+                    },
+                    {
+                        'range':{
+                            'from': '2024-01-01',
+                            'to': '2024-01-02'
+                        },
+                        'value':{
+                            'partyLadder':{
+                                'capacity':'UNDOCUMENTED'
+                            },
+                            'rate':15,
+                            'rateComponents':[
+                                {
+                                    'withholdingType': 'NRA',
+                                    'rate': 15
+                                }
+                            ],
+                            'metadata':{
+                                'id': '00000-0000-000-00000-000001',
+                                'source': 'MANUAL',
+                                'createdAt': '2024-01-02'
+                            }
+                        }
+                    }
+                ]
+            }
+        ]";
+
+        JsonParser parser = new JsonParser();
+        List<Data> parsedData = parser.ParseJson(json);
+
+        if (parsedData != null)
+        {
+            foreach (var item in parsedData)
+            {
+                Console.WriteLine($"Account Domain: {item.Key.Account.Domain}, Value: {item.Key.Account.Value}");
+                Console.WriteLine($"Income Type: {item.Key.IncomeSource.IncomeType}, Regime: {item.Key.IncomeSource.Regime}");
+                Console.WriteLine($"Version: {item.Version}, UpdatedAt: {item.UpdatedAt}");
+                
+                foreach (var ladder in item.TaxRateLadder)
+                {
+                    Console.WriteLine($"Tax Rate Ladder From: {ladder.Range.From}, To: {ladder.Range.To}");
+                    Console.WriteLine($"Rate: {ladder.Value.Rate}");
+                    Console.WriteLine($"Capacity: {ladder.Value.PartyLadder.Capacity}");
+                    Console.WriteLine($"Metadata ID: {ladder.Value.Metadata.Id}, Source: {ladder.Value.Metadata.Source}");
+                }
+            }
+        }
+    }
+}
