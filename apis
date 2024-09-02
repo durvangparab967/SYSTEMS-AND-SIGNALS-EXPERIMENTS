@@ -1,0 +1,33 @@
+import requests
+from requests_toolbelt.multipart.encoder import MultipartEncoder
+
+# URL of the API endpoint
+url = 'http://example.com/upload'
+
+# Path to the file you want to upload
+file_path = 'path/to/your/document.txt'
+
+# Prepare the multipart encoder
+multipart_data = MultipartEncoder(
+    fields={
+        'document': (
+            'document.txt',
+            open(file_path, 'rb'),
+            'text/plain'
+        )
+    }
+)
+
+# Define headers
+headers = {
+    'Content-Type': multipart_data.content_type
+}
+
+# Make the POST request
+response = requests.post(url, headers=headers, data=multipart_data)
+
+# Check the response
+if response.status_code == 200:
+    print('File uploaded successfully')
+else:
+    print(f'Failed to upload file. Status code: {response.status_code}')
