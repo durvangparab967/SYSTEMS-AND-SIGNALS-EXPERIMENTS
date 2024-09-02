@@ -1,0 +1,15 @@
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+
+class Program
+{
+    static void Main()
+    {
+        string json = @"[ /* Your JSON string here */ ]";
+
+        List<TaxData> taxData = JsonSerializer.Deserialize<List<TaxData>>(json);
+
+        // You can now access the parsed data through the taxData list
+    }
+}
