@@ -1,0 +1,25 @@
+public class TaxDataRecord
+{
+    public string Domain { get; set; }
+    public string CAID { get; set; }
+    public string IncomeType { get; set; }
+    public string Regime { get; set; }
+    public int Version { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public DateTime RangeFrom { get; set; }
+    public DateTime RangeTo { get; set; }
+    public string PartyLadderCapacity { get; set; }
+    public int Rate { get; set; }
+    public string WithholdingType { get; set; }
+    public int RateComponentRate { get; set; }
+    public string MetadataId { get; set; }
+    public string MetadataSource { get; set; }
+    public DateTime MetadataCreatedAt { get; set; }
+
+    public string GenerateRecordHash()
+    {
+        return GenerateHash(Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo,
+                            PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+                            MetadataSource, MetadataCreatedAt);
+    }
+}
