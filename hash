@@ -1,0 +1,27 @@
+public static string GenerateHash(string domain, string caid, string incomeType, string regime, 
+                                  int version, DateTime updatedAt, DateTime rangeFrom, 
+                                  DateTime rangeTo, string partyLadderCapacity, int rate, 
+                                  string withholdingType, int rateComponentRate, string metadataId, 
+                                  string metadataSource, DateTime metadataCreatedAt)
+{
+    // Concatenate all the relevant fields into a single string
+    string inputString = $"{domain}|{caid}|{incomeType}|{regime}|{version}|{updatedAt:yyyy-MM-dd}|{rangeFrom:yyyy-MM-dd}|{rangeTo:yyyy-MM-dd}|{partyLadderCapacity}|{rate}|{withholdingType}|{rateComponentRate}|{metadataId}|{metadataSource}|{metadataCreatedAt:yyyy-MM-dd}";
+
+    // Convert the input string to a byte array
+    byte[] inputBytes = Encoding.UTF8.GetBytes(inputString);
+
+    // Use SHA256 to compute the hash
+    using (SHA256 sha256 = SHA256.Create())
+    {
+        byte[] hashBytes = sha256.ComputeHash(inputBytes);
+
+        // Convert the hash byte array to a hexadecimal string
+        StringBuilder sb = new StringBuilder();
+        foreach (byte b in hashBytes)
+        {
+            sb.Append(b.ToString("x2"));
+        }
+
+        return sb.ToString();
+    }
+}
