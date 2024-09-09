@@ -1,0 +1,108 @@
+CREATE PROCEDURE UpsertTaxRates
+    @TaxRates TaxRateType READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Insert new records if the hash key is not present in the TaxRate table
+    INSERT INTO TaxRate (
+        Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+        PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+        MetadataSource, MetadataCreatedAt, Hash, ActiveFlag
+    )
+    SELECT
+        R.Domain,
+        R.CAID,
+        R.IncomeType,
+        R.Regime,
+        R.Version,
+        R.UpdatedAt,
+        R.RangeFrom,
+        R.RangeTo,
+        R.PartyLadderCapacity,
+        R.Rate,
+        R.WithholdingType,
+        R.RateComponentRate,
+        R.MetadataId,
+        R.MetadataSource,
+        R.MetadataCreatedAt,
+        R.Hash,
+        1 -- ActiveFlag is set to True for new records
+    FROM @TaxRates R
+    LEFT JOIN TaxRate T
+        ON T.Domain = R.Domain
+        AND T.CAID = R.CAID
+        AND T.IncomeType = R.IncomeType
+        AND T.Regime = R.Regime
+        AND T.Hash = R.Hash
+    WHERE T.Hash IS NULL; -- Insert if no matching hash
+
+    -- Update the existing record if the hash has changed but version is the same
+    UPDATE T
+    SET 
+        T.Version = R.Version,
+        T.UpdatedAt = R.UpdatedAt,
+        T.RangeFrom = R.RangeFrom,
+        T.RangeTo = R.RangeTo,
+        T.PartyLadderCapacity = R.PartyLadderCapacity,
+        T.Rate = R.Rate,
+        T.WithholdingType = R.WithholdingType,
+        T.RateComponentRate = R.RateComponentRate,
+        T.MetadataId = R.MetadataId,
+        T.MetadataSource = R.MetadataSource,
+        T.MetadataCreatedAt = R.MetadataCreatedAt,
+        T.Hash = R.Hash -- Update hash with the new value
+    FROM TaxRate T
+    INNER JOIN @TaxRates R
+        ON T.Domain = R.Domain
+        AND T.CAID = R.CAID
+        AND T.IncomeType = R.IncomeType
+        AND T.Regime = R.Regime
+    WHERE T.Hash <> R.Hash -- Hash has changed
+    AND T.Version = R.Version; -- Same version
+
+    -- Deactivate the old record and insert a new record when the version is different
+    UPDATE T
+    SET T.ActiveFlag = 0 -- Deactivate old record
+    FROM TaxRate T
+    INNER JOIN @TaxRates R
+        ON T.Domain = R.Domain
+        AND T.CAID = R.CAID
+        AND T.IncomeType = R.IncomeType
+        AND T.Regime = R.Regime
+    WHERE T.Hash <> R.Hash -- Hash has changed
+    AND T.Version <> R.Version; -- Version is different
+
+    -- Insert a new record with the new version and ActiveFlag set to True
+    INSERT INTO TaxRate (
+        Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+        PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+        MetadataSource, MetadataCreatedAt, Hash, ActiveFlag
+    )
+    SELECT
+        R.Domain,
+        R.CAID,
+        R.IncomeType,
+        R.Regime,
+        R.Version,
+        R.UpdatedAt,
+        R.RangeFrom,
+        R.RangeTo,
+        R.PartyLadderCapacity,
+        R.Rate,
+        R.WithholdingType,
+        R.RateComponentRate,
+        R.MetadataId,
+        R.MetadataSource,
+        R.MetadataCreatedAt,
+        R.Hash,
+        1 -- ActiveFlag is set to True for the new version
+    FROM @TaxRates R
+    LEFT JOIN TaxRate T
+        ON T.Domain = R.Domain
+        AND T.CAID = R.CAID
+        AND T.IncomeType = R.IncomeType
+        AND T.Regime = R.Regime
+    WHERE T.Hash <> R.Hash -- Insert new record if hash has changed
+    AND T.Version <> R.Version; -- Only for different version
+END;
