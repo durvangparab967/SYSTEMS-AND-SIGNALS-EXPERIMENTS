@@ -1,0 +1,136 @@
+CREATE PROCEDURE UpsertTaxRates
+    @TaxRates TaxRateType READONLY -- User-defined table type
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Step 1: Insert new records if the hash key does not exist in the TaxRate table
+    INSERT INTO TaxRate (
+        Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+        PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+        MetadataSource, MetadataCreatedAt, Hash, ActiveFlag
+    )
+    SELECT
+        R.Domain,
+        R.CAID,
+        R.IncomeType,
+        R.Regime,
+        R.Version,
+        R.UpdatedAt,
+        R.RangeFrom,
+        R.RangeTo,
+        R.PartyLadderCapacity,
+        R.Rate,
+        R.WithholdingType,
+        R.RateComponentRate,
+        R.MetadataId,
+        R.MetadataSource,
+        R.MetadataCreatedAt,
+        R.Hash,
+        1 -- ActiveFlag = True for new records
+    FROM @TaxRates R
+    LEFT JOIN TaxRate T
+        ON T.Domain = R.Domain
+        AND T.CAID = R.CAID
+        AND T.IncomeType = R.IncomeType
+        AND T.Regime = R.Regime
+    WHERE T.Hash IS NULL; -- If the hash key doesn't exist, insert new record
+
+    -- Step 2: Check for matching hash keys and handle versioning
+    DECLARE @MaxVersion INT;
+
+    -- Loop through each record in the @TaxRates table to check and update version/hash
+    DECLARE cur CURSOR FOR 
+    SELECT Domain, CAID, IncomeType, Regime, Version, Hash
+    FROM @TaxRates;
+
+    DECLARE @Domain NVARCHAR(50), @CAID NVARCHAR(50), @IncomeType NVARCHAR(50), @Regime NVARCHAR(50), @Version INT, @Hash NVARCHAR(100);
+
+    OPEN cur;
+    FETCH NEXT FROM cur INTO @Domain, @CAID, @IncomeType, @Regime, @Version, @Hash;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- Check the max version for records that match the key
+        SELECT @MaxVersion = MAX(Version)
+        FROM TaxRate
+        WHERE Domain = @Domain
+          AND CAID = @CAID
+          AND IncomeType = @IncomeType
+          AND Regime = @Regime
+          AND Hash = @Hash;
+
+        -- Step 3: If max version matches, update the existing record
+        IF @MaxVersion = @Version
+        BEGIN
+            UPDATE TaxRate
+            SET
+                UpdatedAt = R.UpdatedAt,
+                RangeFrom = R.RangeFrom,
+                RangeTo = R.RangeTo,
+                PartyLadderCapacity = R.PartyLadderCapacity,
+                Rate = R.Rate,
+                WithholdingType = R.WithholdingType,
+                RateComponentRate = R.RateComponentRate,
+                MetadataId = R.MetadataId,
+                MetadataSource = R.MetadataSource,
+                MetadataCreatedAt = R.MetadataCreatedAt
+            FROM TaxRate T
+            INNER JOIN @TaxRates R
+                ON T.Domain = R.Domain
+                AND T.CAID = R.CAID
+                AND T.IncomeType = R.IncomeType
+                AND T.Regime = R.Regime
+            WHERE T.Hash = @Hash
+              AND T.Version = @Version;
+        END
+        ELSE
+        BEGIN
+            -- Step 4: If version doesn't match, deactivate old records and insert a new record
+            UPDATE TaxRate
+            SET ActiveFlag = 0 -- Deactivate old records
+            WHERE Domain = @Domain
+              AND CAID = @CAID
+              AND IncomeType = @IncomeType
+              AND Regime = @Regime
+              AND Hash = @Hash;
+
+            -- Insert the new version of the record with ActiveFlag = True
+            INSERT INTO TaxRate (
+                Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+                PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+                MetadataSource, MetadataCreatedAt, Hash, ActiveFlag
+            )
+            SELECT
+                R.Domain,
+                R.CAID,
+                R.IncomeType,
+                R.Regime,
+                R.Version,
+                R.UpdatedAt,
+                R.RangeFrom,
+                R.RangeTo,
+                R.PartyLadderCapacity,
+                R.Rate,
+                R.WithholdingType,
+                R.RateComponentRate,
+                R.MetadataId,
+                R.MetadataSource,
+                R.MetadataCreatedAt,
+                R.Hash,
+                1 -- ActiveFlag = True for new records
+            FROM @TaxRates R
+            WHERE R.Domain = @Domain
+              AND R.CAID = @CAID
+              AND R.IncomeType = @IncomeType
+              AND R.Regime = @Regime
+              AND R.Hash = @Hash;
+        END
+
+        -- Fetch next record
+        FETCH NEXT FROM cur INTO @Domain, @CAID, @IncomeType, @Regime, @Version, @Hash;
+    END;
+
+    CLOSE cur;
+    DEALLOCATE cur;
+END;
