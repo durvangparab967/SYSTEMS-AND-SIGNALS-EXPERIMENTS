@@ -1,0 +1,105 @@
+CREATE PROCEDURE UpsertTaxRates
+    -- Parameters for each column in the TaxRate table
+    @Domain NVARCHAR(50),
+    @CAID NVARCHAR(50),
+    @IncomeType NVARCHAR(50),
+    @Regime NVARCHAR(50),
+    @Version INT,
+    @UpdatedAt DATETIME,
+    @RangeFrom DATETIME,
+    @RangeTo DATETIME,
+    @PartyLadderCapacity NVARCHAR(50),
+    @Rate DECIMAL(18, 4),
+    @WithholdingType NVARCHAR(50),
+    @RateComponentRate DECIMAL(18, 4),
+    @MetadataId NVARCHAR(50),
+    @MetadataSource NVARCHAR(50),
+    @MetadataCreatedAt DATETIME,
+    @Hash NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Step 1: Check if the hash exists for the record
+    IF NOT EXISTS (
+        SELECT 1
+        FROM TaxRate
+        WHERE Domain = @Domain
+          AND CAID = @CAID
+          AND IncomeType = @IncomeType
+          AND Regime = @Regime
+          AND Hash = @Hash
+    )
+    BEGIN
+        -- Step 2: Insert new record if hash does not exist
+        INSERT INTO TaxRate (
+            Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+            PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+            MetadataSource, MetadataCreatedAt, Hash, ActiveFlag
+        )
+        VALUES (
+            @Domain, @CAID, @IncomeType, @Regime, @Version, @UpdatedAt, @RangeFrom, @RangeTo, 
+            @PartyLadderCapacity, @Rate, @WithholdingType, @RateComponentRate, @MetadataId, 
+            @MetadataSource, @MetadataCreatedAt, @Hash, 1 -- ActiveFlag = 1 for new records
+        );
+    END
+    ELSE
+    BEGIN
+        DECLARE @MaxVersion INT;
+
+        -- Step 3: Check the maximum version for the record with the same hash
+        SELECT @MaxVersion = MAX(Version)
+        FROM TaxRate
+        WHERE Domain = @Domain
+          AND CAID = @CAID
+          AND IncomeType = @IncomeType
+          AND Regime = @Regime
+          AND Hash = @Hash;
+
+        -- Step 4: If the max version matches the new version, update the existing record
+        IF @MaxVersion = @Version
+        BEGIN
+            UPDATE TaxRate
+            SET 
+                UpdatedAt = @UpdatedAt,
+                RangeFrom = @RangeFrom,
+                RangeTo = @RangeTo,
+                PartyLadderCapacity = @PartyLadderCapacity,
+                Rate = @Rate,
+                WithholdingType = @WithholdingType,
+                RateComponentRate = @RateComponentRate,
+                MetadataId = @MetadataId,
+                MetadataSource = @MetadataSource,
+                MetadataCreatedAt = @MetadataCreatedAt
+            WHERE Domain = @Domain
+              AND CAID = @CAID
+              AND IncomeType = @IncomeType
+              AND Regime = @Regime
+              AND Hash = @Hash
+              AND Version = @Version;
+        END
+        ELSE
+        BEGIN
+            -- Step 5: If the version does not match, deactivate old records and insert the new one
+            UPDATE TaxRate
+            SET ActiveFlag = 0 -- Deactivate old records
+            WHERE Domain = @Domain
+              AND CAID = @CAID
+              AND IncomeType = @IncomeType
+              AND Regime = @Regime
+              AND Hash = @Hash;
+
+            -- Insert the new record with ActiveFlag = 1
+            INSERT INTO TaxRate (
+                Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+                PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+                MetadataSource, MetadataCreatedAt, Hash, ActiveFlag
+            )
+            VALUES (
+                @Domain, @CAID, @IncomeType, @Regime, @Version, @UpdatedAt, @RangeFrom, @RangeTo, 
+                @PartyLadderCapacity, @Rate, @WithholdingType, @RateComponentRate, @MetadataId, 
+                @MetadataSource, @MetadataCreatedAt, @Hash, 1 -- ActiveFlag = 1 for new records
+            );
+        END
+    END
+END;
