@@ -1,0 +1,109 @@
+CREATE PROCEDURE UpsertTaxRates
+    @TaxRates TaxRateTableType READONLY -- Table-valued parameter (TVP)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Step 1: Insert new records if the hash does not exist
+    INSERT INTO TaxRate (
+        Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+        PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+        MetadataSource, MetadataCreatedAt, Hash, ActiveFlag
+    )
+    SELECT 
+        R.Domain, 
+        R.CAID, 
+        R.IncomeType, 
+        R.Regime, 
+        R.Version, 
+        R.UpdatedAt, 
+        R.RangeFrom, 
+        R.RangeTo, 
+        R.PartyLadderCapacity, 
+        R.Rate, 
+        R.WithholdingType, 
+        R.RateComponentRate, 
+        R.MetadataId, 
+        R.MetadataSource, 
+        R.MetadataCreatedAt, 
+        R.Hash, 
+        1 -- ActiveFlag = True for new records
+    FROM @TaxRates R
+    LEFT JOIN TaxRate T
+        ON T.Domain = R.Domain
+        AND T.CAID = R.CAID
+        AND T.IncomeType = R.IncomeType
+        AND T.Regime = R.Regime
+        AND T.Hash = R.Hash
+    WHERE T.Hash IS NULL; -- If no existing record, insert new record
+
+    -- Step 2: Handle existing hash keys
+    DECLARE @MaxVersion INT;
+
+    -- Update existing records where hash key and version match
+    UPDATE T
+    SET 
+        T.UpdatedAt = R.UpdatedAt,
+        T.RangeFrom = R.RangeFrom,
+        T.RangeTo = R.RangeTo,
+        T.PartyLadderCapacity = R.PartyLadderCapacity,
+        T.Rate = R.Rate,
+        T.WithholdingType = R.WithholdingType,
+        T.RateComponentRate = R.RateComponentRate,
+        T.MetadataId = R.MetadataId,
+        T.MetadataSource = R.MetadataSource,
+        T.MetadataCreatedAt = R.MetadataCreatedAt
+    FROM TaxRate T
+    INNER JOIN @TaxRates R
+        ON T.Domain = R.Domain
+        AND T.CAID = R.CAID
+        AND T.IncomeType = R.IncomeType
+        AND T.Regime = R.Regime
+        AND T.Hash = R.Hash
+    WHERE T.Version = R.Version;
+
+    -- Step 3: Deactivate old records and insert new records if the version is different
+    UPDATE T
+    SET ActiveFlag = 0 -- Deactivate old records
+    FROM TaxRate T
+    INNER JOIN @TaxRates R
+        ON T.Domain = R.Domain
+        AND T.CAID = R.CAID
+        AND T.IncomeType = R.IncomeType
+        AND T.Regime = R.Regime
+        AND T.Hash = R.Hash
+    WHERE T.Version <> R.Version; -- Deactivate if version doesn't match
+
+    -- Step 4: Insert new versions of records where necessary
+    INSERT INTO TaxRate (
+        Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+        PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+        MetadataSource, MetadataCreatedAt, Hash, ActiveFlag
+    )
+    SELECT 
+        R.Domain, 
+        R.CAID, 
+        R.IncomeType, 
+        R.Regime, 
+        R.Version, 
+        R.UpdatedAt, 
+        R.RangeFrom, 
+        R.RangeTo, 
+        R.PartyLadderCapacity, 
+        R.Rate, 
+        R.WithholdingType, 
+        R.RateComponentRate, 
+        R.MetadataId, 
+        R.MetadataSource, 
+        R.MetadataCreatedAt, 
+        R.Hash, 
+        1 -- ActiveFlag = True for new records
+    FROM @TaxRates R
+    LEFT JOIN TaxRate T
+        ON T.Domain = R.Domain
+        AND T.CAID = R.CAID
+        AND T.IncomeType = R.IncomeType
+        AND T.Regime = R.Regime
+        AND T.Hash = R.Hash
+    WHERE T.Version <> R.Version;
+END;
