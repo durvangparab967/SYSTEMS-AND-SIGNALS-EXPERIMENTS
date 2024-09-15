@@ -1,0 +1,113 @@
+CREATE PROCEDURE UpsertTaxRates
+    @TaxRates TaxRateType READONLY  -- User-defined table type
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @MaxVersion INT;
+
+    -- Loop through each record in @TaxRates
+    DECLARE TaxRateCursor CURSOR FOR
+    SELECT Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+           PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+           MetadataSource, MetadataCreatedAt, Hash
+    FROM @TaxRates;
+
+    DECLARE @Domain NVARCHAR(50), @CAID NVARCHAR(50), @IncomeType NVARCHAR(50), @Regime NVARCHAR(50),
+            @Version INT, @UpdatedAt DATETIME, @RangeFrom DATETIME, @RangeTo DATETIME,
+            @PartyLadderCapacity NVARCHAR(50), @Rate DECIMAL(5,2), @WithholdingType NVARCHAR(50),
+            @RateComponentRate DECIMAL(5,2), @MetadataId NVARCHAR(50), @MetadataSource NVARCHAR(50),
+            @MetadataCreatedAt DATETIME, @Hash NVARCHAR(64);
+
+    OPEN TaxRateCursor;
+    FETCH NEXT FROM TaxRateCursor INTO @Domain, @CAID, @IncomeType, @Regime, @Version, @UpdatedAt, 
+                                      @RangeFrom, @RangeTo, @PartyLadderCapacity, @Rate, 
+                                      @WithholdingType, @RateComponentRate, @MetadataId, 
+                                      @MetadataSource, @MetadataCreatedAt, @Hash;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- Step 1: Check if the record exists and get the max version for the combination
+        SELECT @MaxVersion = MAX(Version)
+        FROM TaxRate
+        WHERE Domain = @Domain
+        AND CAID = @CAID
+        AND IncomeType = @IncomeType
+        AND Regime = @Regime;
+
+        -- Step 2: IF no record exists (MaxVersion IS NULL), insert the new record
+        IF @MaxVersion IS NULL
+        BEGIN
+            INSERT INTO TaxRate
+            (
+                Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+                PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+                MetadataSource, MetadataCreatedAt, Hash, ActiveFlag
+            )
+            VALUES
+            (
+                @Domain, @CAID, @IncomeType, @Regime, @Version, @UpdatedAt, @RangeFrom, @RangeTo, 
+                @PartyLadderCapacity, @Rate, @WithholdingType, @RateComponentRate, @MetadataId, 
+                @MetadataSource, @MetadataCreatedAt, @Hash, 1  -- Set the ActiveFlag to True
+            );
+        END
+        ELSE
+        BEGIN
+            -- Step 3: IF versions match, update the existing record
+            IF @MaxVersion = @Version
+            BEGIN
+                UPDATE TaxRate
+                SET UpdatedAt = @UpdatedAt, 
+                    RangeFrom = @RangeFrom,
+                    RangeTo = @RangeTo,
+                    PartyLadderCapacity = @PartyLadderCapacity,
+                    Rate = @Rate,
+                    WithholdingType = @WithholdingType,
+                    RateComponentRate = @RateComponentRate,
+                    MetadataId = @MetadataId,
+                    MetadataSource = @MetadataSource,
+                    MetadataCreatedAt = @MetadataCreatedAt,
+                    Hash = @Hash
+                WHERE Domain = @Domain
+                AND CAID = @CAID
+                AND IncomeType = @IncomeType
+                AND Regime = @Regime
+                AND Version = @Version;
+            END
+            ELSE
+            BEGIN
+                -- Step 4: IF versions differ, deactivate old records and insert new record
+                UPDATE TaxRate
+                SET ActiveFlag = 0 -- Deactivate old records
+                WHERE Domain = @Domain
+                AND CAID = @CAID
+                AND IncomeType = @IncomeType
+                AND Regime = @Regime
+                AND ActiveFlag = 1; -- Only deactivate active records
+
+                -- Insert the new version of the record
+                INSERT INTO TaxRate
+                (
+                    Domain, CAID, IncomeType, Regime, Version, UpdatedAt, RangeFrom, RangeTo, 
+                    PartyLadderCapacity, Rate, WithholdingType, RateComponentRate, MetadataId, 
+                    MetadataSource, MetadataCreatedAt, Hash, ActiveFlag
+                )
+                VALUES
+                (
+                    @Domain, @CAID, @IncomeType, @Regime, @Version, @UpdatedAt, @RangeFrom, @RangeTo, 
+                    @PartyLadderCapacity, @Rate, @WithholdingType, @RateComponentRate, @MetadataId, 
+                    @MetadataSource, @MetadataCreatedAt, @Hash, 1  -- Set the ActiveFlag to True
+                );
+            END
+        END
+
+        -- Fetch the next record from @TaxRates
+        FETCH NEXT FROM TaxRateCursor INTO @Domain, @CAID, @IncomeType, @Regime, @Version, @UpdatedAt, 
+                                          @RangeFrom, @RangeTo, @PartyLadderCapacity, @Rate, 
+                                          @WithholdingType, @RateComponentRate, @MetadataId, 
+                                          @MetadataSource, @MetadataCreatedAt, @Hash;
+    END
+
+    CLOSE TaxRateCursor;
+    DEALLOCATE TaxRateCursor;
+END;
