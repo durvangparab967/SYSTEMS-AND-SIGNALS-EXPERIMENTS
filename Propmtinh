@@ -1,0 +1,42 @@
+Prompt:
+
+You are an expert project manager using Jira. I have a business document uploaded that outlines the requirements for a new project. Please read the document and create the following for me:
+
+Epic: Summarize the main goal of the project into a single Epic. The Epic should be a high-level description of the overall work required.
+
+User Stories: Break down the Epic into smaller, actionable User Stories. Each story should follow the format:
+
+"As a [type of user], I want to [goal] so that [reason/benefit]."
+Each story should have:
+A description
+Acceptance criteria (2-3 points)
+Priority (High, Medium, Low)
+Once you generate the Epic and User Stories, return the information in a JSON array format like this:
+
+{
+  "epic": {
+    "title": "Epic Title",
+    "description": "High-level description of the project goal."
+  },
+  "stories": [
+    {
+      "title": "Story Title",
+      "description": "As a [type of user], I want to [goal] so that [reason/benefit].",
+      "acceptance_criteria": [
+        "Acceptance criterion 1",
+        "Acceptance criterion 2",
+        "Acceptance criterion 3"
+      ],
+      "priority": "High"
+    },
+    {
+      "title": "Story Title 2",
+      "description": "As a [type of user], I want to [goal] so that [reason/benefit].",
+      "acceptance_criteria": [
+        "Acceptance criterion 1",
+        "Acceptance criterion 2"
+      ],
+      "priority": "Medium"
+    }
+  ]
+}
