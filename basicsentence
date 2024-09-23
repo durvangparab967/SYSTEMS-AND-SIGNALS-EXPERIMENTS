@@ -1,0 +1,1 @@
+ASTRA processes income events from BaNCS, calculates optimal tax rates, and returns them for withholding tax. Durvang improved bulk tax rate processing by 50%, allowing Ops to handle 1000 records in 5 minutes, up from 500 in 15 minutes.
