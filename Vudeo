@@ -1,0 +1,51 @@
+from pytube import YouTube
+import moviepy.editor as mp
+import whisper
+import os
+
+# Step 1: Download the video
+def download_video(url, output_path='video.mp4'):
+    yt = YouTube(url)
+    stream = yt.streams.filter(file_extension='mp4').first()
+    stream.download(filename=output_path)
+    print(f"Video downloaded: {output_path}")
+
+# Step 2: Extract audio from the video
+def extract_audio(video_path, audio_output='audio.wav'):
+    video = mp.VideoFileClip(video_path)
+    video.audio.write_audiofile(audio_output)
+    print(f"Audio extracted: {audio_output}")
+
+# Step 3: Convert audio to text using Whisper
+def convert_audio_to_text(audio_path, model="base"):
+    model = whisper.load_model(model)
+    result = model.transcribe(audio_path)
+    return result["text"]
+
+# Step 4: Save the transcribed text as subtitles (SRT format)
+def save_as_srt(transcript, output_srt='subtitles.srt'):
+    with open(output_srt, 'w') as srt_file:
+        srt_file.write(transcript)
+    print(f"Subtitles saved as: {output_srt}")
+
+# Example Usage
+video_url = "YOUR_VIDEO_URL"  # Replace with your video link
+video_path = "downloaded_video.mp4"
+audio_path = "extracted_audio.wav"
+output_srt = "video_subtitles.srt"
+
+# Step 1: Download the video
+download_video(video_url, video_path)
+
+# Step 2: Extract audio from the video
+extract_audio(video_path, audio_path)
+
+# Step 3: Convert speech to text
+transcript = convert_audio_to_text(audio_path)
+
+# Step 4: Save transcript as subtitles
+save_as_srt(transcript, output_srt)
+
+# Cleanup temporary files
+os.remove(video_path)
+os.remove(audio_path)
