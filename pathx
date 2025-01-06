@@ -1,0 +1,13 @@
+var xpath = '';" +
+            "  for (; el && el.nodeType == 1; el = el.parentNode) {" +
+            "    var idx = 0;" +
+            "    for (var sibling = el.previousSibling; sibling; sibling = sibling.previousSibling) {" +
+            "      if (sibling.nodeType == 1 && sibling.tagName == el.tagName) {" +
+            "        idx++;" +
+            "      }" +
+            "    }" +
+            "    var tagName = el.tagName.toLowerCase();" +
+            "    var pathIndex = (idx ? '[' + (idx + 1) + ']' : '');" +
+            "    xpath = '/' + tagName + pathIndex + xpath;" +
+            "  }" +
+            "  return xpath;" 
