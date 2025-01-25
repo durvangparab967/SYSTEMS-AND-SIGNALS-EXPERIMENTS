@@ -1,0 +1,57 @@
+using System.Diagnostics;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        // Specify the directory where the project is located
+        string projectDirectory = @"C:\Path\To\Your\Project";
+        string dotnetBuildCommand = "dotnet build";
+
+        // Create a process to run the build command
+        Process process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "cmd.exe", // Use the command line
+                Arguments = $"/C cd \"{projectDirectory}\" && {dotnetBuildCommand}", // Change to project directory and build
+                RedirectStandardOutput = true, // Capture output
+                RedirectStandardError = true,  // Capture errors
+                UseShellExecute = false,       // Required for redirection
+                CreateNoWindow = true          // Don't show the command prompt window
+            }
+        };
+
+        // Start the process
+        process.Start();
+
+        // Read the output and error streams
+        string output = process.StandardOutput.ReadToEnd();
+        string error = process.StandardError.ReadToEnd();
+
+        process.WaitForExit();
+
+        // Display the output and error
+        if (!string.IsNullOrEmpty(output))
+        {
+            System.Console.WriteLine("Build Output:");
+            System.Console.WriteLine(output);
+        }
+
+        if (!string.IsNullOrEmpty(error))
+        {
+            System.Console.WriteLine("Build Errors:");
+            System.Console.WriteLine(error);
+        }
+
+        // Check exit code to determine if the build succeeded
+        if (process.ExitCode == 0)
+        {
+            System.Console.WriteLine("Build completed successfully.");
+        }
+        else
+        {
+            System.Console.WriteLine($"Build failed with exit code: {process.ExitCode}");
+        }
+    }
+}
